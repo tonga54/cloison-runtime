@@ -1,36 +1,10 @@
-<p align="center">
-  <br />
-  <img src="docs/assets/hero-banner.png" alt="Bulkhead Runtime" width="100%" />
-  <br /><br />
-  <a href="https://www.npmjs.com/package/bulkhead-runtime"><img src="https://img.shields.io/npm/v/bulkhead-runtime?style=flat-square&color=00ff41&labelColor=0d1117" alt="npm" /></a>
-  <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square&labelColor=0d1117" alt="MIT" />
-  <img src="https://img.shields.io/badge/node-%3E%3D22.12-brightgreen?style=flat-square&labelColor=0d1117&logo=node.js&logoColor=white" alt="node" />
-  <img src="https://img.shields.io/badge/runtime_deps-3-00ff41?style=flat-square&labelColor=0d1117" alt="deps" />
-  <img src="https://img.shields.io/badge/tests-279_passing-00ff41?style=flat-square&labelColor=0d1117" alt="tests" />
-  <img src="https://img.shields.io/badge/sandbox-5_isolation_layers-ff6b6b?style=flat-square&labelColor=0d1117" alt="isolation" />
-  <img src="https://img.shields.io/badge/crypto-AES--256--GCM-blueviolet?style=flat-square&labelColor=0d1117" alt="crypto" />
-  <img src="https://img.shields.io/badge/cold_start-~50ms-00ff41?style=flat-square&labelColor=0d1117" alt="cold start" />
-</p>
+**Run 1,000 AI agents on a single Linux box.**  
+Each in its own OS namespace. Each with private memory, encrypted credentials, and an isolated filesystem.  
+**No Docker. No cloud. No VMs. One** `npm install`**.**
 
-<br />
-
-<p align="center">
-  <b>Run 1,000 AI agents on a single Linux box.</b><br />
-  Each in its own OS namespace. Each with private memory, encrypted credentials, and an isolated filesystem.<br />
-  <b>No Docker. No cloud. No VMs. One <code>npm install</code>.</b>
-</p>
-
-<p align="center">
-  <i>Built on production-hardened internals from <a href="https://github.com/nicepkg/openclaw">OpenClaw</a> — failover, SSRF protection, embedding pipelines, session indexing, and more.</i>
-</p>
-
-<br />
+*Built on production-hardened internals from [OpenClaw](https://github.com/nicepkg/openclaw) — failover, SSRF protection, embedding pipelines, session indexing, and more.*
 
 ---
-
-<p align="center">
-  <img src="docs/assets/features.png" alt="Key Features" width="100%" />
-</p>
 
 ---
 
@@ -57,7 +31,7 @@ import { createPlatform } from "bulkhead-runtime";
 
 const platform = createPlatform({
   stateDir: "/var/bulkhead-runtime",
-  credentialPassphrase: process.env.CREDENTIAL_KEY,
+  credentialPassphrase: process.env.BULKHEAD_CREDENTIAL_KEY,
 });
 
 const workspace = await platform.createWorkspace("user-42", {
@@ -74,6 +48,7 @@ const result = await workspace.run({
 > **Requires:** Linux + Node.js 22.12+
 >
 > **macOS / Windows dev:**
+>
 > ```bash
 > git clone https://github.com/tonga54/bulkhead-runtime.git && cd bulkhead-runtime
 > docker compose run dev bash
@@ -84,9 +59,11 @@ const result = await workspace.run({
 
 ## Use Cases
 
-<table>
-<tr>
-<td width="50%">
+
+|     |
+| --- |
+|     |
+
 
 **One agent per customer in your SaaS**
 
@@ -102,9 +79,6 @@ app.post("/api/agent", async (req, res) => {
   res.json({ response: result.response });
 });
 ```
-
-</td>
-<td width="50%">
 
 **Per-team agents inside your company**
 
@@ -124,11 +98,6 @@ await ops.credentials.store("pagerduty", { token: "pd_..." });
 await data.credentials.store("gcp", { key: "..." });
 ```
 
-</td>
-</tr>
-<tr>
-<td width="50%">
-
 **Client-isolated agents in consulting / agencies**
 
 Each client project gets its own workspace. The agent knows that client's stack, their conventions, their infra. When you offboard a client, `deleteWorkspace()` wipes everything — memory, credentials, sessions.
@@ -145,9 +114,6 @@ await acme.run({
 
 await platform.deleteWorkspace("client-acme");
 ```
-
-</td>
-<td width="50%">
 
 **Ephemeral agents for CI / PR review / task runners**
 
@@ -167,57 +133,11 @@ const result = await ws.run({
 await platform.deleteWorkspace(jobId);
 ```
 
-</td>
-</tr>
-</table>
-
 **The common thread:** you have multiple tenants (users, teams, clients, jobs) and each one needs an AI agent with its own secrets, tools, and memory — on the same server, without any cross-contamination.
 
 ---
 
 ## How It Works
-
-<p align="center">
-  <img src="docs/assets/architecture.png" alt="Architecture" width="100%" />
-</p>
-
-```mermaid
-graph TB
-  subgraph HOST["HOST PROCESS"]
-    subgraph WA["Workspace A"]
-      WA_mem["memory.db"]
-      WA_cred["creds.enc"]
-      WA_sess["sessions/"]
-      WA_skill["skills[]"]
-    end
-    subgraph WB["Workspace B"]
-      WB_mem["memory.db"]
-      WB_cred["creds.enc"]
-      WB_sess["sessions/"]
-      WB_skill["skills[]"]
-    end
-    subgraph WN["Workspace N"]
-      WN_mem["memory.db"]
-      WN_cred["creds.enc"]
-      WN_sess["sessions/"]
-      WN_skill["skills[]"]
-    end
-
-    subgraph SA["Sandbox A — user ns · mount ns · pid ns · net ns · cgroup v2"]
-      AgentA["Agent A"]
-    end
-    subgraph SB["Sandbox B — user ns · mount ns · pid ns · net ns · cgroup v2"]
-      AgentB["Agent B"]
-    end
-    subgraph SN["Sandbox N — user ns · mount ns · pid ns · net ns · cgroup v2"]
-      AgentN["Agent N"]
-    end
-  end
-
-  WA -->|"JSON-RPC IPC"| SA
-  WB -->|"JSON-RPC IPC"| SB
-  WN -->|"JSON-RPC IPC"| SN
-```
 
 > Agent A cannot see Agent B's files, memory, credentials, or processes. Not by policy. **By kernel enforcement.**
 
@@ -225,21 +145,23 @@ graph TB
 
 ## Why Bulkhead Over Alternatives
 
-| | Docker per user | E2B / Cloud | **Bulkhead Runtime** |
-|:---|:---:|:---:|:---:|
-| **Isolation mechanism** | Container per user | Cloud VM per session | **Linux namespaces** |
-| **Credential security** | DIY | Not built-in | **AES-256-GCM, never exposed to agent** |
-| **Persistent memory** | DIY | DIY | **SQLite + vector embeddings per tenant** |
-| **Embedding cache + batch** | DIY | DIY | **SQLite cache, batch with retry** |
-| **SSRF protection** | DIY | DIY | **DNS-resolve-and-pin, private-IP blocking, fail-closed** |
-| **Model fallback** | DIY | DIY | **Automatic multi-model fallback chains** |
-| **API key rotation** | DIY | DIY | **Multi-key with rate-limit rotation** |
-| **Parallel subagents** | DIY | DIY | **Built-in with depth limiting** |
-| **Skills with secret injection** | DIY | DIY | **Credentials injected server-side** |
-| **Infrastructure** | Docker daemon | Cloud API + billing | **Single npm package** |
-| **Cold start** | ~2s | ~5-10s | **~50ms** |
-| **Embeddable in your app** | No | No | **Yes — it's a library** |
-| **License** | — | Proprietary | **MIT** |
+
+|                                  | Docker per user    | E2B / Cloud          | **Bulkhead Runtime**                                      |
+| -------------------------------- | ------------------ | -------------------- | --------------------------------------------------------- |
+| **Isolation mechanism**          | Container per user | Cloud VM per session | **Linux namespaces**                                      |
+| **Credential security**          | DIY                | Not built-in         | **AES-256-GCM, never exposed to agent**                   |
+| **Persistent memory**            | DIY                | DIY                  | **SQLite + vector embeddings per tenant**                 |
+| **Embedding cache + batch**      | DIY                | DIY                  | **SQLite cache, batch with retry**                        |
+| **SSRF protection**              | DIY                | DIY                  | **DNS-resolve-and-pin, private-IP blocking, fail-closed** |
+| **Model fallback**               | DIY                | DIY                  | **Automatic multi-model fallback chains**                 |
+| **API key rotation**             | DIY                | DIY                  | **Multi-key with rate-limit rotation**                    |
+| **Parallel subagents**           | DIY                | DIY                  | **Built-in with depth limiting**                          |
+| **Skills with secret injection** | DIY                | DIY                  | **Credentials injected server-side**                      |
+| **Infrastructure**               | Docker daemon      | Cloud API + billing  | **Single npm package**                                    |
+| **Cold start**                   | ~2s                | ~5-10s               | **~50ms**                                                 |
+| **Embeddable in your app**       | No                 | No                   | **Yes — it's a library**                                  |
+| **License**                      | —                  | Proprietary          | **MIT**                                                   |
+
 
 ---
 
@@ -273,7 +195,7 @@ import { createPlatform } from "bulkhead-runtime";
 
 const platform = createPlatform({
   stateDir: "/var/bulkhead-runtime",
-  credentialPassphrase: process.env.CREDENTIAL_KEY,
+  credentialPassphrase: process.env.BULKHEAD_CREDENTIAL_KEY,
 });
 
 const alice = await platform.createWorkspace("alice", {
@@ -291,33 +213,11 @@ const bob = await platform.createWorkspace("bob", {
 
 When `workspace.run()` executes, Bulkhead spawns a **child process** with 5 layers of kernel isolation. The agent **never runs in your application's process**.
 
-```mermaid
-sequenceDiagram
-    participant App as Your App
-    participant Host as Host Process
-    participant Sandbox as Sandbox (isolated)
+<p align="center">
+  <img src="docs/assets/execution-flow.png" alt="Execution Flow" width="100%" />
+</p>
 
-    App->>Host: workspace.run({ message })
-    Host->>Host: Load session history
-    Host->>Host: Resolve enabled skills
-    Host->>Host: Detect sandbox capabilities
-    Host->>Sandbox: Spawn child process (unshare)
-    activate Sandbox
-    Note over Sandbox: Enter user namespace<br/>pivot_root → new filesystem<br/>PID namespace (own procs)<br/>Network ns (loopback only)<br/>cgroup v2 (mem/cpu/pid cap)
-    Sandbox->>Host: IPC: memory.search
-    Host-->>Sandbox: search results
-    Sandbox->>Host: IPC: memory.store
-    Host-->>Sandbox: store confirmation
-    Sandbox->>Host: IPC: skill.execute
-    Host->>Host: Decrypt credentials (AES-256-GCM)
-    Host-->>Sandbox: skill output (no credentials)
-    Sandbox-->>Host: Agent response
-    deactivate Sandbox
-    Host->>Host: Kill child process
-    Host->>Host: Fire lifecycle hooks
-    Host->>Host: Update session store
-    Host-->>App: { response, session }
-```
+
 
 The agent gets coding tools (bash, file read/write/edit) because the mount namespace restricts its entire filesystem view. **It literally cannot see anything outside its sandbox.**
 
@@ -332,23 +232,11 @@ await alice.credentials.store("github", { token: "ghp_alice_secret" });
 await alice.credentials.store("openai", { apiKey: "sk-..." });
 ```
 
-```mermaid
-sequenceDiagram
-    participant Agent as Agent (sandboxed)
-    participant Host as Host Process
-    participant Skill as Skill Script
+<p align="center">
+  <img src="docs/assets/credential-flow.png" alt="Credential Security Flow" width="100%" />
+</p>
 
-    Agent->>Host: skill_execute({ skillId: "github-issues" })
-    Host->>Host: Resolve skill directory
-    Host->>Host: Decrypt credentials (AES-256-GCM)
-    Host->>Skill: Spawn script with credentials as env vars
-    activate Skill
-    Skill->>Skill: process.env.token → use API
-    Skill-->>Host: stdout → JSON result
-    deactivate Skill
-    Host-->>Agent: Result string (no credentials)
-    Note over Agent: ✗ Never sees the token<br/>✗ Cannot read credential file<br/>✗ Cannot intercept env vars
-```
+
 
 System environment variables (`PATH`, `HOME`, `NODE_ENV`) are protected from credential key collision. Skill IDs are validated against prototype pollution.
 
@@ -419,14 +307,16 @@ await runtime.run({
 
 **Hybrid search engine under the hood:**
 
-| Stage | Algorithm |
-|:---|:---|
-| **Vector search** | Cosine similarity against stored embeddings |
-| **Keyword search** | SQLite FTS5 with BM25 ranking |
-| **Fusion** | Weighted merge of vector + keyword scores |
-| **Temporal decay** | Exponential time-based score attenuation |
-| **Diversity** | MMR (Maximal Marginal Relevance) re-ranking |
+
+| Stage               | Algorithm                                            |
+| ------------------- | ---------------------------------------------------- |
+| **Vector search**   | Cosine similarity against stored embeddings          |
+| **Keyword search**  | SQLite FTS5 with BM25 ranking                        |
+| **Fusion**          | Weighted merge of vector + keyword scores            |
+| **Temporal decay**  | Exponential time-based score attenuation             |
+| **Diversity**       | MMR (Maximal Marginal Relevance) re-ranking          |
 | **Query expansion** | 7-language keyword extraction (EN/ES/PT/ZH/JA/KO/AR) |
+
 
 Works without any embedding API key — falls back to FTS5 keyword search.
 
@@ -686,49 +576,32 @@ BULKHEAD_LOG_FILE=/var/log/bulkhead-runtime.log
 
 ## Security Architecture
 
-<p align="center">
-  <img src="docs/assets/security-layers.png" alt="5 Layers of Sandbox Isolation" width="100%" />
-</p>
-
 ### 5 Layers of Sandbox Isolation
 
 All layers are **fail-closed** — if any layer can't be applied, the sandbox refuses to start.
 
-```mermaid
-block-beta
-  columns 1
-  block:L1["Layer 1 — User Namespace · unprivileged creation via unshare(2)"]
-    columns 1
-    block:L2["Layer 2 — Mount Namespace · pivot_root → new root · old root unmounted"]
-      columns 1
-      block:L3["Layer 3 — PID Namespace · agent only sees its own processes"]
-        columns 1
-        block:L4["Layer 4 — Network Namespace · loopback only · no external access"]
-          columns 1
-          L5["Layer 5 — cgroups v2 · memory.max · pids.max · cpu.weight"]
-        end
-      end
-    end
-  end
-  AGENT["Agent process — can only see its own isolated world"]
+<p align="center">
+  <img src="docs/assets/security-layers.png" alt="5 Layers of Sandbox Isolation" width="100%" />
+</p>
 
-  L1 --> AGENT
-```
+
 
 ### Defense in Depth
 
-| Defense | Mechanism |
-|:---|:---|
-| **Env allowlist** | Only `PATH`, `HOME`, `NODE_ENV` + the single API key the agent needs. Everything else dropped. |
-| **Credential proxy** | Secrets decrypted server-side, injected into skill execution. Never sent over IPC. |
-| **Path traversal blocklist** | `/proc`, `/sys`, `/home/`, `/etc/shadow`, `/run/docker.sock`, and more are blocked from bind mounts. |
-| **Symlink rejection** | `additionalBinds` sources must not be symlinks (prevents TOCTOU attacks). |
-| **IPC rate limiting** | 200 calls/sec per method. Prevents resource exhaustion from rogue agents. |
-| **IPC buffer limit** | 50 MB max. Peer stops on overflow to prevent memory exhaustion. |
-| **Prototype pollution guard** | `__proto__`, `constructor`, `prototype` rejected as skill/credential IDs. |
-| **Stdout interception** | IPC uses a dedicated fd. All other stdout is redirected to stderr. |
-| **Sensitive path validation** | `workspaceDir`, `projectDir`, `nodeExecutable`, `additionalBinds` all validated. |
-| **Atomic writes** | Config, credentials, sessions, skill state — all use tmp+rename pattern. |
+
+| Defense                       | Mechanism                                                                                            |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **Env allowlist**             | Only `PATH`, `HOME`, `NODE_ENV` + the single API key the agent needs. Everything else dropped.       |
+| **Credential proxy**          | Secrets decrypted server-side, injected into skill execution. Never sent over IPC.                   |
+| **Path traversal blocklist**  | `/proc`, `/sys`, `/home/`, `/etc/shadow`, `/run/docker.sock`, and more are blocked from bind mounts. |
+| **Symlink rejection**         | `additionalBinds` sources must not be symlinks (prevents TOCTOU attacks).                            |
+| **IPC rate limiting**         | 200 calls/sec per method. Prevents resource exhaustion from rogue agents.                            |
+| **IPC buffer limit**          | 50 MB max. Peer stops on overflow to prevent memory exhaustion.                                      |
+| **Prototype pollution guard** | `__proto__`, `constructor`, `prototype` rejected as skill/credential IDs.                            |
+| **Stdout interception**       | IPC uses a dedicated fd. All other stdout is redirected to stderr.                                   |
+| **Sensitive path validation** | `workspaceDir`, `projectDir`, `nodeExecutable`, `additionalBinds` all validated.                     |
+| **Atomic writes**             | Config, credentials, sessions, skill state — all use tmp+rename pattern.                             |
+
 
 ---
 
@@ -738,27 +611,31 @@ block-beta
 
 Any provider supported by [pi-ai](https://github.com/nicepkg/pi-ai):
 
-| Provider | Example Model |
-|:---|:---|
+
+| Provider      | Example Model              |
+| ------------- | -------------------------- |
 | **Anthropic** | `claude-sonnet-4-20250514` |
-| **Google** | `gemini-2.5-flash` |
-| **OpenAI** | `gpt-4o` |
-| **Groq** | `llama-3.3-70b-versatile` |
-| **Cerebras** | `llama-3.3-70b` |
-| **Mistral** | `mistral-large-latest` |
-| **xAI** | `grok-3` |
+| **Google**    | `gemini-2.5-flash`         |
+| **OpenAI**    | `gpt-4o`                   |
+| **Groq**      | `llama-3.3-70b-versatile`  |
+| **Cerebras**  | `llama-3.3-70b`            |
+| **Mistral**   | `mistral-large-latest`     |
+| **xAI**       | `grok-3`                   |
+
 
 ### Embedding Providers
 
 Optional — keyword search works without any API key.
 
-| Provider | Default Model | Local |
-|:---|:---|:---:|
-| **OpenAI** | `text-embedding-3-small` | |
-| **Gemini** | `gemini-embedding-001` | |
-| **Voyage** | `voyage-3-lite` | |
-| **Mistral** | `mistral-embed` | |
-| **Ollama** | `nomic-embed-text` | **Yes** |
+
+| Provider    | Default Model            | Local   |
+| ----------- | ------------------------ | ------- |
+| **OpenAI**  | `text-embedding-3-small` |         |
+| **Gemini**  | `gemini-embedding-001`   |         |
+| **Voyage**  | `voyage-3-lite`          |         |
+| **Mistral** | `mistral-embed`          |         |
+| **Ollama**  | `nomic-embed-text`       | **Yes** |
+
 
 ---
 
@@ -834,19 +711,21 @@ Every file is workspace-scoped. No shared state between tenants.
 
 Bulkhead Runtime stands on the shoulders of [OpenClaw](https://github.com/nicepkg/openclaw). Several production-critical subsystems were ported directly from OpenClaw's codebase:
 
-| Subsystem | Origin |
-|:---|:---|
+
+| Subsystem                                 | Origin                                                                    |
+| ----------------------------------------- | ------------------------------------------------------------------------- |
 | **Model fallback & error classification** | `src/agents/model-fallback.ts`, `failover-error.ts`, `failover-policy.ts` |
-| **API key rotation** | `src/agents/api-key-rotation.ts`, `live-auth-keys.ts` |
-| **Context window guards** | `src/agents/context-window-guard.ts` |
-| **Retry with backoff** | `src/infra/retry.ts` |
-| **SSRF protection** | `src/infra/net/ssrf.ts`, `fetch-guard.ts` |
-| **Embedding cache & batch** | `extensions/memory-core/src/memory/manager-embedding-ops.ts` |
-| **File indexer** | `extensions/memory-core/src/memory/manager-sync-ops.ts` |
-| **Session transcript indexer** | `extensions/memory-core/src/memory/manager-sync-ops.ts` |
-| **Subagent orchestration** | `src/agents/subagent-*.ts` |
-| **Structured logging** | `src/logging/logger.ts`, `subsystem.ts`, `levels.ts` |
-| **Transcript events** | `src/sessions/transcript-events.ts` |
+| **API key rotation**                      | `src/agents/api-key-rotation.ts`, `live-auth-keys.ts`                     |
+| **Context window guards**                 | `src/agents/context-window-guard.ts`                                      |
+| **Retry with backoff**                    | `src/infra/retry.ts`                                                      |
+| **SSRF protection**                       | `src/infra/net/ssrf.ts`, `fetch-guard.ts`                                 |
+| **Embedding cache & batch**               | `extensions/memory-core/src/memory/manager-embedding-ops.ts`              |
+| **File indexer**                          | `extensions/memory-core/src/memory/manager-sync-ops.ts`                   |
+| **Session transcript indexer**            | `extensions/memory-core/src/memory/manager-sync-ops.ts`                   |
+| **Subagent orchestration**                | `src/agents/subagent-*.ts`                                                |
+| **Structured logging**                    | `src/logging/logger.ts`, `subsystem.ts`, `levels.ts`                      |
+| **Transcript events**                     | `src/sessions/transcript-events.ts`                                       |
+
 
 OpenClaw solved these problems in production. We extracted, adapted, and integrated them into Bulkhead's multi-tenant architecture. Full credit where it's due.
 

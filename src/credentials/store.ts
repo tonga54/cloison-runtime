@@ -4,6 +4,15 @@ import * as crypto from "node:crypto";
 import type { CredentialStore } from "./types.js";
 import { atomicWriteFileSync } from "../shared/index.js";
 
+let credentialLock: Promise<void> = Promise.resolve();
+
+function withCredentialLock<T>(fn: () => Promise<T>): Promise<T> {
+  const prev = credentialLock;
+  let release: () => void;
+  credentialLock = new Promise<void>((r) => { release = r; });
+  return prev.then(fn).finally(() => release!());
+}
+
 const ALGORITHM = "aes-256-gcm";
 const KEY_LENGTH = 32;
 const IV_LENGTH = 16;
@@ -102,10 +111,12 @@ export function createCredentialStore(
   return {
     async store(skillId, credentials) {
       validateSkillId(skillId);
-      const file = loadFile();
-      const plaintext = JSON.stringify(credentials);
-      file.credentials[skillId] = encrypt(plaintext, passphrase);
-      saveFile(file);
+      return withCredentialLock(async () => {
+        const file = loadFile();
+        const plaintext = JSON.stringify(credentials);
+        file.credentials[skillId] = encrypt(plaintext, passphrase);
+        saveFile(file);
+      });
     },
 
     async resolve(skillId) {
@@ -127,11 +138,13 @@ export function createCredentialStore(
 
     async delete(skillId) {
       validateSkillId(skillId);
-      const file = loadFile();
-      if (!(skillId in file.credentials)) return false;
-      delete file.credentials[skillId];
-      saveFile(file);
-      return true;
+      return withCredentialLock(async () => {
+        const file = loadFile();
+        if (!(skillId in file.credentials)) return false;
+        delete file.credentials[skillId];
+        saveFile(file);
+        return true;
+      });
     },
 
     async list() {

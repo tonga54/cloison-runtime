@@ -122,7 +122,7 @@ async function spawnLinuxSandbox(
       targetCommand = seccomp.command;
       targetArgs = seccomp.args;
       seccompProfilePath = seccomp.profilePath;
-      log.debug("seccomp: PR_SET_NO_NEW_PRIVS applied (no BPF filter — full seccomp-BPF requires libseccomp)", { sandboxId });
+      log.debug("seccomp: PR_SET_NO_NEW_PRIVS + BPF syscall filter applied", { sandboxId });
     }
   }
 
