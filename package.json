@@ -1,6 +1,6 @@
 {
   "name": "bulkhead-runtime",
-  "version": "2026.4.5-beta.6",
+  "version": "2026.4.5-beta.7",
   "description": "Multi-tenant AI agent runtime with OS-level isolation. Sandboxed execution, encrypted credentials, private memory per tenant — one server, no Docker.",
   "license": "MIT",
   "repository": {
@@ -45,6 +45,35 @@
     "typescript": "^5.9.3",
     "vitest": "^4.1.2"
   },
+  "keywords": [
+    "ai-agent",
+    "ai-agents",
+    "agent",
+    "agent-runtime",
+    "autonomous-agent",
+    "multi-agent",
+    "ai",
+    "llm",
+    "ai-infrastructure",
+    "ai-security",
+    "agent-security",
+    "mcp",
+    "model-context-protocol",
+    "tool-use",
+    "sandbox",
+    "secure-sandbox",
+    "sandboxing",
+    "runtime",
+    "isolation",
+    "process-isolation",
+    "tenant-isolation",
+    "multi-tenant",
+    "multitenant",
+    "security",
+    "credentials",
+    "encrypted-credentials",
+    "containerless"
+  ],
   "engines": {
     "node": ">=22.12.0"
   },
