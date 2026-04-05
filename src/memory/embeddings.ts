@@ -1,7 +1,4 @@
-// EmbeddingProvider interface and factory, adapted from OpenClaw src/memory/embeddings.ts
-// The original depended on OpenClawConfig, SecretInput, SSRF policies, model-auth, and
-// per-provider client modules. This version keeps the same EmbeddingProvider interface
-// but accepts simple options (apiKey, model, baseUrl) directly.
+import { buildBaseUrlPolicy, fetchWithSsrfGuard, type SsrfPolicy } from "./ssrf.js";
 
 export type EmbeddingProvider = {
   id: string;
@@ -38,7 +35,16 @@ function sanitizeAndNormalizeEmbedding(vec: number[]): number[] {
   return sanitized.map((value) => value / magnitude);
 }
 
-// --- Shared helper for OpenAI-compatible providers (Bearer token + data[].embedding response) ---
+async function ssrfFetch(
+  url: string,
+  init: RequestInit,
+  ssrfPolicy?: SsrfPolicy,
+): Promise<Response> {
+  if (ssrfPolicy) {
+    return fetchWithSsrfGuard(url, init, ssrfPolicy);
+  }
+  return fetch(url, init);
+}
 
 interface BearerProviderConfig {
   id: EmbeddingProviderId;
@@ -46,20 +52,25 @@ interface BearerProviderConfig {
   model: string;
   baseUrl: string;
   maxInputTokens?: number;
+  ssrfPolicy?: SsrfPolicy;
 }
 
 function createBearerEmbeddingProvider(config: BearerProviderConfig): EmbeddingProvider {
-  const { id, apiKey, model, baseUrl, maxInputTokens } = config;
+  const { id, apiKey, model, baseUrl, maxInputTokens, ssrfPolicy } = config;
 
   async function call(input: string[]): Promise<number[][]> {
-    const res = await fetch(`${baseUrl}/embeddings`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+    const res = await ssrfFetch(
+      `${baseUrl}/embeddings`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({ input, model }),
       },
-      body: JSON.stringify({ input, model }),
-    });
+      ssrfPolicy,
+    );
     if (!res.ok) {
       throw new Error(`${id} embeddings failed (${res.status}): ${sanitizeErrorBody(await res.text())}`);
     }
@@ -98,14 +109,17 @@ function createOpenAiProvider(params: {
   apiKey: string;
   model?: string;
   baseUrl?: string;
+  enableSsrf?: boolean;
 }): EmbeddingProvider {
   const model = params.model ?? "text-embedding-3-small";
+  const baseUrl = (params.baseUrl ?? "https://api.openai.com/v1").replace(/\/+$/, "");
   return createBearerEmbeddingProvider({
     id: "openai",
     apiKey: params.apiKey,
     model,
-    baseUrl: (params.baseUrl ?? "https://api.openai.com/v1").replace(/\/+$/, ""),
+    baseUrl,
     maxInputTokens: OPENAI_MAX_INPUT_TOKENS[model],
+    ssrfPolicy: params.enableSsrf !== false ? buildBaseUrlPolicy(baseUrl) ?? undefined : undefined,
   });
 }
 
@@ -120,19 +134,21 @@ function createGeminiProvider(params: {
   apiKey: string;
   model?: string;
   baseUrl?: string;
+  enableSsrf?: boolean;
 }): EmbeddingProvider {
   const model = params.model ?? "gemini-embedding-001";
   const baseUrl = (params.baseUrl ?? "https://generativelanguage.googleapis.com/v1beta").replace(
     /\/+$/,
     "",
   );
+  const ssrfPolicy = params.enableSsrf !== false ? buildBaseUrlPolicy(baseUrl) ?? undefined : undefined;
 
   async function call(texts: string[]): Promise<number[][]> {
     const requests = texts.map((text) => ({
       model: `models/${model}`,
       content: { parts: [{ text }] },
     }));
-    const res = await fetch(
+    const res = await ssrfFetch(
       `${baseUrl}/models/${model}:batchEmbedContents`,
       {
         method: "POST",
@@ -142,6 +158,7 @@ function createGeminiProvider(params: {
         },
         body: JSON.stringify({ requests }),
       },
+      ssrfPolicy,
     );
     if (!res.ok) throw new Error(`gemini embeddings failed (${res.status}): ${sanitizeErrorBody(await res.text())}`);
     const body = (await res.json()) as { embeddings: Array<{ values: number[] }> };
@@ -173,12 +190,15 @@ function createVoyageProvider(params: {
   apiKey: string;
   model?: string;
   baseUrl?: string;
+  enableSsrf?: boolean;
 }): EmbeddingProvider {
+  const baseUrl = (params.baseUrl ?? "https://api.voyageai.com/v1").replace(/\/+$/, "");
   return createBearerEmbeddingProvider({
     id: "voyage",
     apiKey: params.apiKey,
     model: params.model ?? "voyage-3-lite",
-    baseUrl: (params.baseUrl ?? "https://api.voyageai.com/v1").replace(/\/+$/, ""),
+    baseUrl,
+    ssrfPolicy: params.enableSsrf !== false ? buildBaseUrlPolicy(baseUrl) ?? undefined : undefined,
   });
 }
 
@@ -188,12 +208,15 @@ function createMistralProvider(params: {
   apiKey: string;
   model?: string;
   baseUrl?: string;
+  enableSsrf?: boolean;
 }): EmbeddingProvider {
+  const baseUrl = (params.baseUrl ?? "https://api.mistral.ai/v1").replace(/\/+$/, "");
   return createBearerEmbeddingProvider({
     id: "mistral",
     apiKey: params.apiKey,
     model: params.model ?? "mistral-embed",
-    baseUrl: (params.baseUrl ?? "https://api.mistral.ai/v1").replace(/\/+$/, ""),
+    baseUrl,
+    ssrfPolicy: params.enableSsrf !== false ? buildBaseUrlPolicy(baseUrl) ?? undefined : undefined,
   });
 }
 
@@ -202,16 +225,22 @@ function createMistralProvider(params: {
 function createOllamaProvider(params: {
   model?: string;
   baseUrl?: string;
+  enableSsrf?: boolean;
 }): EmbeddingProvider {
   const model = params.model ?? "nomic-embed-text";
   const baseUrl = (params.baseUrl ?? "http://localhost:11434").replace(/\/+$/, "");
+  const ssrfPolicy = params.enableSsrf !== false ? buildBaseUrlPolicy(baseUrl) ?? undefined : undefined;
 
   async function call(input: string[]): Promise<number[][]> {
-    const res = await fetch(`${baseUrl}/api/embed`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model, input }),
-    });
+    const res = await ssrfFetch(
+      `${baseUrl}/api/embed`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model, input }),
+      },
+      ssrfPolicy,
+    );
     if (!res.ok) throw new Error(`ollama embeddings failed (${res.status}): ${sanitizeErrorBody(await res.text())}`);
     const body = (await res.json()) as { embeddings: number[][] };
     return body.embeddings.map((v) => sanitizeAndNormalizeEmbedding(v));
@@ -230,36 +259,35 @@ function createOllamaProvider(params: {
 }
 
 // --- Factory ---
-// Simplified from OpenClaw's createEmbeddingProvider which used OpenClawConfig,
-// secret resolution, SSRF policies, and fallback chains.
 
 export type CreateEmbeddingProviderOptions = {
   provider: EmbeddingProviderId;
   apiKey?: string;
   model?: string;
   baseUrl?: string;
+  enableSsrf?: boolean;
 };
 
 export function createEmbeddingProvider(
   options: CreateEmbeddingProviderOptions,
 ): EmbeddingProvider {
-  const { provider, apiKey, model, baseUrl } = options;
+  const { provider, apiKey, model, baseUrl, enableSsrf } = options;
 
   switch (provider) {
     case "openai":
       if (!apiKey) throw new Error("OpenAI embedding provider requires an API key");
-      return createOpenAiProvider({ apiKey, model, baseUrl });
+      return createOpenAiProvider({ apiKey, model, baseUrl, enableSsrf });
     case "gemini":
       if (!apiKey) throw new Error("Gemini embedding provider requires an API key");
-      return createGeminiProvider({ apiKey, model, baseUrl });
+      return createGeminiProvider({ apiKey, model, baseUrl, enableSsrf });
     case "voyage":
       if (!apiKey) throw new Error("Voyage embedding provider requires an API key");
-      return createVoyageProvider({ apiKey, model, baseUrl });
+      return createVoyageProvider({ apiKey, model, baseUrl, enableSsrf });
     case "mistral":
       if (!apiKey) throw new Error("Mistral embedding provider requires an API key");
-      return createMistralProvider({ apiKey, model, baseUrl });
+      return createMistralProvider({ apiKey, model, baseUrl, enableSsrf });
     case "ollama":
-      return createOllamaProvider({ model, baseUrl });
+      return createOllamaProvider({ model, baseUrl, enableSsrf });
     default:
       throw new Error(`Unknown embedding provider: ${provider}`);
   }

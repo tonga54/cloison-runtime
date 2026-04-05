@@ -13,6 +13,12 @@ import { detectCapabilities, buildUnshareArgs, buildNamespaceFlags } from "./nam
 import { createCgroupController, cgroupLimitsFromConfig, type CgroupController } from "./cgroup.js";
 import { prepareRootfs, buildMountScript, type PreparedRootfs } from "./rootfs.js";
 import { escapeShellArg } from "../shared/index.js";
+import { buildDefaultProfile, type SeccompProfile } from "./seccomp.js";
+import { buildSeccompWrapperArgs, isSeccompAvailable } from "./seccomp-apply.js";
+import { cleanupSeccompProfile } from "./seccomp.js";
+import { createSubsystemLogger } from "../logging/subsystem.js";
+
+const log = createSubsystemLogger("sandbox");
 
 const activeSandboxCleanups = new Set<() => void>();
 
@@ -100,6 +106,26 @@ async function spawnLinuxSandbox(
     }
   }
 
+  let seccompProfilePath: string | null = null;
+  let targetCommand = options.command;
+  let targetArgs = options.args;
+
+  if (isSeccompAvailable()) {
+    const profile = buildDefaultProfile();
+    const seccomp = buildSeccompWrapperArgs(
+      profile,
+      sandboxId,
+      options.command,
+      options.args,
+    );
+    if (seccomp) {
+      targetCommand = seccomp.command;
+      targetArgs = seccomp.args;
+      seccompProfilePath = seccomp.profilePath;
+      log.debug("seccomp: PR_SET_NO_NEW_PRIVS applied (no BPF filter — full seccomp-BPF requires libseccomp)", { sandboxId });
+    }
+  }
+
   let rootfs: PreparedRootfs | null = null;
   let wrapperScriptPath: string | null = null;
 
@@ -112,7 +138,14 @@ async function spawnLinuxSandbox(
     const mountScript = buildMountScript(rootfs.rootDir, rootfs.mounts, {
       hasPidNamespace: nsFlags.pid,
     });
-    wrapperScriptPath = writeWrapperScript(sandboxId, mountScript, options, cgroup?.cgroupPath);
+    wrapperScriptPath = writeWrapperScript(
+      sandboxId,
+      mountScript,
+      options,
+      cgroup?.cgroupPath,
+      targetCommand !== options.command ? targetCommand : undefined,
+      targetArgs !== options.args ? targetArgs : undefined,
+    );
   }
 
   const rawEnv: Record<string, string> = {
@@ -129,7 +162,7 @@ async function spawnLinuxSandbox(
   if (wrapperScriptPath) {
     fullArgs = [...unshareArgs, "/bin/sh", wrapperScriptPath];
   } else {
-    fullArgs = [...unshareArgs, options.command, ...options.args];
+    fullArgs = [...unshareArgs, targetCommand, ...targetArgs];
   }
 
   const child = spawn("unshare", fullArgs, {
@@ -149,6 +182,7 @@ async function spawnLinuxSandbox(
     cgroup?.cleanup();
     rootfs?.cleanup();
     if (wrapperScriptPath) cleanupFile(wrapperScriptPath);
+    if (seccompProfilePath) cleanupSeccompProfile(seccompProfilePath);
   };
 
   activeSandboxCleanups.add(cleanupAll);
@@ -207,13 +241,17 @@ function writeWrapperScript(
   mountScript: string,
   options: SandboxSpawnOptions,
   cgroupProcsPath?: string,
+  seccompCmd?: string,
+  seccompArgs?: string[],
 ): string {
   const tmpDir = path.join(os.tmpdir(), "bulkhead-runtime-sandbox");
   fs.mkdirSync(tmpDir, { recursive: true, mode: 0o700 });
   const scriptPath = path.join(tmpDir, `${sandboxId}-init.sh`);
 
-  const escapedCmd = escapeShellArg(options.command);
-  const escapedArgs = options.args.map(escapeShellArg).join(" ");
+  const cmd = seccompCmd ?? options.command;
+  const args = seccompArgs ?? options.args;
+  const escapedCmd = escapeShellArg(cmd);
+  const escapedArgs = args.map(escapeShellArg).join(" ");
 
   const preamble: string[] = [];
   if (cgroupProcsPath) {

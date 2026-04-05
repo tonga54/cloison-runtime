@@ -5,3 +5,4 @@ dist/
 .platform-demo/
 *.db
 .context/
+.DS_Store

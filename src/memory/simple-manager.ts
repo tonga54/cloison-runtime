@@ -9,6 +9,7 @@ import { buildFtsQuery, bm25RankToScore, mergeHybridResults } from "./hybrid.js"
 import type { EmbeddingProvider } from "./embeddings.js";
 import type { MemorySearchResult } from "./types.js";
 import { debugEmbeddingsLog } from "./embeddings-debug.js";
+import { createEmbeddingCache, hashContent, type EmbeddingCache } from "./embedding-cache.js";
 
 const SNIPPET_MAX_CHARS = 700;
 const MAX_VECTOR_SEARCH_CHUNKS = 10_000;
@@ -19,11 +20,15 @@ export interface SimpleMemoryManager {
   delete(id: string): Promise<boolean>;
   list(): Promise<Array<{ id: string; content: string; metadata?: Record<string, unknown>; createdAt: string }>>;
   close(): Promise<void>;
+  readonly db: DatabaseSync;
+  readonly embeddingCache: EmbeddingCache | null;
 }
 
 export interface SimpleMemoryManagerOptions {
   dbDir: string;
   embeddingProvider?: EmbeddingProvider;
+  enableEmbeddingCache?: boolean;
+  maxCacheEntries?: number;
 }
 
 function generateId(): string {
@@ -74,6 +79,11 @@ export function createSimpleMemoryManager(options: SimpleMemoryManagerOptions): 
   const provider = options.embeddingProvider ?? null;
   const providerModel = provider ? `${provider.id}/${provider.model}` : "none";
 
+  const embeddingCache = (options.enableEmbeddingCache !== false && provider)
+    ? createEmbeddingCache(db)
+    : null;
+  const maxCacheEntries = options.maxCacheEntries ?? 50_000;
+
   const stmtInsert = db.prepare(`
     INSERT OR REPLACE INTO chunks (id, content, embedding, metadata, source, path, model, start_line, end_line, hash, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -91,9 +101,18 @@ export function createSimpleMemoryManager(options: SimpleMemoryManagerOptions): 
       let embeddingJson: string | null = null;
       if (provider) {
         try {
-          const vec = await provider.embedQuery(content);
+          const contentHash = hashContent(content);
+          const cached = embeddingCache?.get(provider.id, provider.model, contentHash);
+          let vec: number[];
+          if (cached) {
+            vec = cached;
+            debugEmbeddingsLog("embedding from cache", { id, dims: vec.length });
+          } else {
+            vec = await provider.embedQuery(content);
+            embeddingCache?.set(provider.id, provider.model, "", contentHash, vec, vec.length);
+            debugEmbeddingsLog("embedded chunk", { id, dims: vec.length });
+          }
           embeddingJson = JSON.stringify(vec);
-          debugEmbeddingsLog("embedded chunk", { id, dims: vec.length });
         } catch (err) {
           debugEmbeddingsLog("embedding failed", { id, error: String(err) });
         }
@@ -230,7 +249,13 @@ export function createSimpleMemoryManager(options: SimpleMemoryManagerOptions): 
     },
 
     async close() {
+      if (embeddingCache) {
+        embeddingCache.prune(maxCacheEntries);
+      }
       db.close();
     },
+
+    get db() { return db; },
+    get embeddingCache() { return embeddingCache; },
   };
 }

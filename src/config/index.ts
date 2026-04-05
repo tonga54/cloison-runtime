@@ -6,6 +6,8 @@ export interface AgentRuntimeConfig {
   model?: string;
   provider?: string;
   apiKey?: string;
+  apiKeys?: string[];
+  configPath?: string;
   stateDir?: string;
   workspaceDir?: string;
   systemPrompt?: string;
@@ -18,9 +20,35 @@ export interface AgentRuntimeConfig {
       apiKey?: string;
       model?: string;
       baseUrl?: string;
+      enableSsrf?: boolean;
+    };
+    enableEmbeddingCache?: boolean;
+    maxCacheEntries?: number;
+    fileIndexing?: {
+      enabled?: boolean;
+      watchPaths?: string[];
+      debounceMs?: number;
+    };
+    sessionIndexing?: {
+      enabled?: boolean;
+      deltaBytes?: number;
+      deltaMessages?: number;
     };
   };
   hooks?: { dirs?: string[] };
+  fallbacks?: string[];
+  contextTokens?: number;
+  maxRetries?: number;
+  logging?: {
+    level?: "trace" | "debug" | "info" | "warn" | "error" | "fatal" | "silent";
+    file?: string;
+    maxFileBytes?: number;
+    json?: boolean;
+  };
+  streamConfig?: Record<string, {
+    headers?: Record<string, string>;
+    baseUrl?: string;
+  }>;
 }
 
 export function getDefaultStateDir(): string {
@@ -28,15 +56,17 @@ export function getDefaultStateDir(): string {
 }
 
 export function loadConfig(configPath?: string): AgentRuntimeConfig {
-  const resolved =
-    configPath ??
-    process.env["BULKHEAD_CONFIG_PATH"] ??
-    path.join(getDefaultStateDir(), "bulkhead-runtime.json");
+  const explicit = configPath ?? process.env["BULKHEAD_CONFIG_PATH"];
+  const resolved = explicit ?? path.join(getDefaultStateDir(), "bulkhead-runtime.json");
 
   try {
     const raw = fs.readFileSync(resolved, "utf-8");
     return JSON.parse(raw) as AgentRuntimeConfig;
-  } catch {
+  } catch (err) {
+    if (explicit) {
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new Error(`Failed to load config from "${resolved}": ${msg}`);
+    }
     return {};
   }
 }

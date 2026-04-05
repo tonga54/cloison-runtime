@@ -5,6 +5,11 @@ export { createCgroupController, cgroupLimitsFromConfig, type CgroupController, 
 export { buildDefaultProfile, buildRestrictedProfile, writeSeccompProfile, cleanupSeccompProfile } from "./seccomp.js";
 export { prepareRootfs, buildMountScript, type PreparedRootfs, type RootfsOptions } from "./rootfs.js";
 export { createProxyTools } from "./proxy-tools.js";
+export {
+  ensureSeccompLoader,
+  buildSeccompWrapperArgs,
+  isSeccompAvailable,
+} from "./seccomp-apply.js";
 export type { WorkerConfig } from "./worker.js";
 export type {
   SandboxConfig,

@@ -18,6 +18,9 @@ export interface WorkerConfig {
   provider: string;
   systemPrompt?: string;
   enableCodingTools: boolean;
+  contextTokens?: number;
+  maxRetries?: number;
+  enableSubagents?: boolean;
 }
 
 export async function startWorker(): Promise<void> {
@@ -91,16 +94,43 @@ export async function startWorker(): Promise<void> {
         ? [...codingTools]
         : [];
 
+      const customTools: import("@mariozechner/pi-coding-agent").ToolDefinition[] =
+        proxyTools as unknown as import("@mariozechner/pi-coding-agent").ToolDefinition[];
+
+      if (config.enableSubagents !== false) {
+        try {
+          const { createSubagentTool } = await import("../runtime/subagent.js");
+          const subTool = createSubagentTool({
+            runtime: {
+              run: async (opts) => {
+                const subResult = await peer.call<{ response?: string; sessionId?: string; error?: string }>(
+                  "agent.run.subagent", opts,
+                );
+                if (subResult.error) throw new Error(subResult.error);
+                return { response: subResult.response ?? "", sessionId: subResult.sessionId ?? "" };
+              },
+            },
+          });
+          customTools.push(subTool as unknown as import("@mariozechner/pi-coding-agent").ToolDefinition);
+        } catch {
+          // subagent support not available in this build
+        }
+      }
+
       const { session } = await createAgentSession({
         cwd: config.workspaceDir,
         model: resolvedModel,
         tools,
-        customTools: proxyTools as unknown as import("@mariozechner/pi-coding-agent").ToolDefinition[],
+        customTools,
         sessionManager,
       });
 
       const pendingToolArgs = new Map<string, Record<string, unknown>>();
       const unsubscribe = session.subscribe((event) => {
+        peer.notify("agent.event", {
+          type: event.type,
+          ...(event as Record<string, unknown>),
+        });
         if (event.type === "tool_execution_start") {
           pendingToolArgs.set(event.toolCallId, (event.args as Record<string, unknown>) ?? {});
           peer.notify("hooks.before_tool_call", {

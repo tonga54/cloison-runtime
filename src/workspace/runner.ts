@@ -25,6 +25,12 @@ import {
   PROTECTED_SYSTEM_ENV_KEYS,
   buildProviderEnvKey,
 } from "../shared/index.js";
+import { runWithModelFallback, createCooldownStore } from "../runtime/model-fallback.js";
+import { resolveContextWindowInfo, evaluateContextWindowGuard, CONTEXT_WINDOW_HARD_MIN_TOKENS } from "../runtime/context-guard.js";
+import { collectProviderApiKeys, executeWithApiKeyRotation } from "../runtime/api-key-rotation.js";
+import { createSubsystemLogger } from "../logging/subsystem.js";
+
+const log = createSubsystemLogger("workspace-runner");
 
 export interface WorkspaceRunnerOptions {
   userId: string;
@@ -42,25 +48,23 @@ export function createWorkspaceRunner(
 ): (options: WorkspaceRunOptions) => Promise<AgentRunResult> {
 
   const sandboxManager = createSandboxManager();
+  const cooldownStore = createCooldownStore();
 
   return async function run(options: WorkspaceRunOptions): Promise<AgentRunResult> {
     const sessionId = options.sessionId ?? `session_${Date.now()}`;
-    const modelId = options.model ?? ctx.config.model ?? DEFAULT_MODEL;
-    const provider = options.provider ?? ctx.config.provider ?? DEFAULT_PROVIDER;
-    const providerEnvKey = buildProviderEnvKey(provider);
-    const apiKey =
-      options.apiKey ?? ctx.config.apiKey ?? process.env[providerEnvKey] ?? "";
+    const requestedModelId = options.model ?? ctx.config.model ?? DEFAULT_MODEL;
+    const requestedProvider = options.provider ?? ctx.config.provider ?? DEFAULT_PROVIDER;
 
     const sessionsDir = path.join(ctx.workspaceDir, "sessions", sessionId);
     fs.mkdirSync(sessionsDir, { recursive: true });
 
-    await getOrCreateSession(ctx.workspaceDir, sessionId, { model: modelId });
+    await getOrCreateSession(ctx.workspaceDir, sessionId, { model: requestedModelId });
 
     await ctx.hooks.run("session_start", { sessionId });
     await ctx.hooks.run("before_agent_start", {
       sessionId,
       message: options.message,
-      model: modelId,
+      model: requestedModelId,
     });
 
     let skillsPrompt = "";
@@ -83,68 +87,107 @@ export function createWorkspaceRunner(
       .filter(Boolean)
       .join("\n\n");
 
-    const workerConfig: WorkerConfig = {
-      workspaceDir: ctx.workspaceDir,
-      sessionsDir,
-      sessionId,
-      message: options.message,
-      model: modelId,
-      provider,
-      systemPrompt: systemPrompt || undefined,
-      enableCodingTools: true,
-    };
+    async function executeWithModel(
+      provider: string,
+      modelId: string,
+    ): Promise<AgentRunResult> {
+      // Context window guard — same check as single-user runtime
+      const ctxInfo = resolveContextWindowInfo({
+        configContextTokens: (options as Record<string, unknown>).contextTokens as number | undefined,
+      });
+      const ctxGuard = evaluateContextWindowGuard({ info: ctxInfo });
+      if (ctxGuard.shouldBlock) {
+        throw new Error(
+          `Context window too small (${ctxGuard.tokens} tokens). Minimum: ${CONTEXT_WINDOW_HARD_MIN_TOKENS}.`,
+        );
+      }
 
-    const workerPath = resolveWorkerPath();
-    const projectDir = path.dirname(path.dirname(workerPath));
+      const providerEnvKey = buildProviderEnvKey(provider);
 
-    const workerConfigJson = JSON.stringify(workerConfig);
-    const MAX_ENV_SIZE = 128 * 1024; // 128 KB - safe limit for env vars on Linux
-    if (workerConfigJson.length > MAX_ENV_SIZE) {
-      throw new Error(
-        `SANDBOX_WORKER_CONFIG exceeds ${MAX_ENV_SIZE} bytes (${workerConfigJson.length} bytes). ` +
-        `Reduce the message or systemPrompt size.`,
-      );
-    }
+      const apiKeys: string[] = [];
+      if (options.apiKey) apiKeys.push(options.apiKey);
+      if ((options as Record<string, unknown>).apiKeys) {
+        apiKeys.push(...((options as Record<string, unknown>).apiKeys as string[]));
+      }
+      if (ctx.config.apiKey) apiKeys.push(ctx.config.apiKey);
+      apiKeys.push(...collectProviderApiKeys(provider));
+      const uniqueKeys = [...new Set(apiKeys.filter((k) => k.length > 0))];
+      if (uniqueKeys.length === 0) {
+        const envVal = process.env[providerEnvKey];
+        if (envVal) uniqueKeys.push(envVal);
+      }
 
-    const workerEnv: Record<string, string> = {
-      SANDBOX_WORKER_CONFIG: workerConfigJson,
-    };
-    if (apiKey) {
-      workerEnv[providerEnvKey] = apiKey;
-    }
+      async function runWithKey(apiKey: string): Promise<AgentRunResult> {
+        const workerConfig: WorkerConfig = {
+          workspaceDir: ctx.workspaceDir,
+          sessionsDir,
+          sessionId,
+          message: options.message,
+          model: modelId,
+          provider,
+          systemPrompt: systemPrompt || undefined,
+          enableCodingTools: true,
+          contextTokens: (options as Record<string, unknown>).contextTokens as number | undefined,
+          maxRetries: (options as Record<string, unknown>).maxRetries as number | undefined,
+          enableSubagents: (options as Record<string, unknown>).enableSubagents as boolean | undefined,
+        };
 
-    const sandboxConfig: SandboxConfig = {
-      memoryLimitMb: 512,
-      pidsLimit: 100,
-      timeoutMs: 5 * 60 * 1000,
-      networkIsolation: false,
-      mountBinds: [
-        { source: projectDir, target: projectDir, readonly: true },
-      ],
-    };
+        const workerPath = resolveWorkerPath();
+        const projectDir = path.dirname(path.dirname(workerPath));
 
-    const sandboxProcess = await sandboxManager.spawn({
-      command: process.execPath,
-      args: [
-        "--experimental-vm-modules",
-        "--no-warnings",
-        workerPath,
-      ],
-      env: workerEnv,
-      cwd: ctx.workspaceDir,
-      config: sandboxConfig,
-      protectedKeys: apiKey ? [providerEnvKey] : [],
-      onStderr: (data) => {
-        process.stderr.write(`[sandbox:${ctx.userId}] ${data}`);
-      },
-    });
+        const workerConfigJson = JSON.stringify(workerConfig);
+        const MAX_ENV_SIZE = 128 * 1024;
+        if (workerConfigJson.length > MAX_ENV_SIZE) {
+          throw new Error(
+            `SANDBOX_WORKER_CONFIG exceeds ${MAX_ENV_SIZE} bytes (${workerConfigJson.length} bytes). ` +
+            `Reduce the message or systemPrompt size.`,
+          );
+        }
 
-    const agentTimeoutMs = (sandboxConfig.timeoutMs ?? 5 * 60 * 1000) + 60_000;
-    const hostPeer = createIpcPeer(
-      sandboxProcess.stdout as unknown as Readable,
-      sandboxProcess.stdin as unknown as Writable,
-      { callTimeoutMs: agentTimeoutMs },
-    );
+        const workerEnv: Record<string, string> = {
+          SANDBOX_WORKER_CONFIG: workerConfigJson,
+        };
+        if (apiKey) {
+          workerEnv[providerEnvKey] = apiKey;
+        }
+
+        const sandboxConfig: SandboxConfig = {
+          memoryLimitMb: 512,
+          pidsLimit: 100,
+          timeoutMs: 5 * 60 * 1000,
+          networkIsolation: true,
+          mountBinds: [
+            { source: projectDir, target: projectDir, readonly: true },
+          ],
+        };
+
+        const workerArgs = [
+          "--experimental-vm-modules",
+          "--no-warnings",
+        ];
+        if (workerPath.endsWith(".ts")) {
+          workerArgs.push("--import", "tsx");
+        }
+        workerArgs.push(workerPath);
+
+        const sandboxProcess = await sandboxManager.spawn({
+          command: process.execPath,
+          args: workerArgs,
+          env: workerEnv,
+          cwd: ctx.workspaceDir,
+          config: sandboxConfig,
+          protectedKeys: apiKey ? [providerEnvKey] : [],
+          onStderr: (data) => {
+            process.stderr.write(`[sandbox:${ctx.userId}] ${data}`);
+          },
+        });
+
+        const agentTimeoutMs = (sandboxConfig.timeoutMs ?? 5 * 60 * 1000) + 60_000;
+        const hostPeer = createIpcPeer(
+          sandboxProcess.stdout as unknown as Readable,
+          sandboxProcess.stdin as unknown as Writable,
+          { callTimeoutMs: agentTimeoutMs },
+        );
 
     const ipcRateLimiter = createIpcRateLimiter();
 
@@ -238,6 +281,17 @@ export function createWorkspaceRunner(
       return {};
     });
 
+    const onEvent = (options as Record<string, unknown>).onEvent as
+      | ((event: Record<string, unknown>) => void)
+      | undefined;
+    if (onEvent) {
+      hostPeer.handle("agent.event", async (params) => {
+        const event = (params ?? {}) as Record<string, unknown>;
+        try { onEvent(event); } catch { /* caller error */ }
+        return {};
+      });
+    }
+
     hostPeer.start();
 
     // If the child process dies, stop the IPC peer so pending calls reject
@@ -278,28 +332,59 @@ export function createWorkspaceRunner(
       throw err;
     }
 
-    hostPeer.stop();
-    sandboxProcess.kill();
-    await sandboxProcess.waitForExit();
+        hostPeer.stop();
+        sandboxProcess.kill();
+        await sandboxProcess.waitForExit();
+
+        return {
+          ...result,
+          provider,
+          model: modelId,
+        };
+      }
+
+      if (uniqueKeys.length > 1) {
+        return executeWithApiKeyRotation({
+          provider,
+          apiKeys: uniqueKeys,
+          execute: runWithKey,
+        });
+      }
+
+      return runWithKey(uniqueKeys[0] ?? "");
+    }
+
+    const fallbackResult = await runWithModelFallback({
+      provider: requestedProvider,
+      model: requestedModelId,
+      fallbacks: (options as Record<string, unknown>).fallbacks as string[] | undefined,
+      run: executeWithModel,
+      cooldownStore,
+    });
 
     await ctx.hooks.run("after_agent_end", {
       sessionId,
-      result: result.response,
+      result: fallbackResult.result.response,
     });
     await ctx.hooks.run("session_end", { sessionId });
 
-    await updateSession(ctx.workspaceDir, sessionId, { model: modelId });
+    await updateSession(ctx.workspaceDir, sessionId, { model: fallbackResult.model });
 
-    return result;
+    return {
+      ...fallbackResult.result,
+      fallbackUsed: fallbackResult.attempts.length > 0,
+    };
   };
 }
 
 function resolveWorkerPath(): string {
   const thisFile = url.fileURLToPath(import.meta.url);
   const srcDir = path.dirname(path.dirname(thisFile));
+  const jsPath = path.join(srcDir, "sandbox", "worker.js");
+  if (fs.existsSync(jsPath)) return jsPath;
   const tsPath = path.join(srcDir, "sandbox", "worker.ts");
   if (fs.existsSync(tsPath)) return tsPath;
-  return path.join(srcDir, "sandbox", "worker.js");
+  return jsPath;
 }
 
 function findSkillExecutable(skillDir: string): string | undefined {

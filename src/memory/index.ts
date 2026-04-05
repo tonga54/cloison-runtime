@@ -1,4 +1,3 @@
-// Re-exports from OpenClaw's memory module
 export type {
   MemorySource,
   MemorySearchResult,
@@ -34,6 +33,42 @@ export { extractKeywords } from "./query-expansion.js";
 export { buildFtsQuery, bm25RankToScore } from "./hybrid.js";
 export { requireNodeSqlite } from "./sqlite.js";
 
-// Simple memory store for consumers that want store/search/delete/list
-// without the full OpenClaw MemoryIndexManager infrastructure.
 export { createSimpleMemoryManager, type SimpleMemoryManager } from "./simple-manager.js";
+
+export {
+  createEmbeddingCache,
+  hashContent,
+  type EmbeddingCache,
+} from "./embedding-cache.js";
+
+export {
+  embedBatchWithCacheAndRetry,
+  embedQueryWithTimeout,
+  runBatchWithFallback,
+  createBatchFailureState,
+  enforceEmbeddingMaxInputTokens,
+  type BatchEmbeddingOptions,
+  type BatchEmbeddingResult,
+  type BatchFailureState,
+} from "./embedding-batch.js";
+
+export {
+  createFileIndexer,
+  type FileIndexer,
+  type FileIndexerOptions,
+  type FileIndexSyncResult,
+} from "./file-indexer.js";
+
+export {
+  createSessionIndexer,
+  type SessionIndexer,
+  type SessionIndexerOptions,
+  type SessionIndexResult,
+} from "./session-indexer.js";
+
+export {
+  buildBaseUrlPolicy,
+  validateUrl,
+  fetchWithSsrfGuard,
+  type SsrfPolicy,
+} from "./ssrf.js";

@@ -7,3 +7,9 @@ export {
   updateSession,
   getSessionStorePath,
 } from "./store.js";
+
+export {
+  onSessionTranscriptUpdate,
+  emitSessionTranscriptUpdate,
+  type SessionTranscriptUpdate,
+} from "./transcript-events.js";
