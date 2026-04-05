@@ -1,6 +1,6 @@
 {
   "name": "bulkhead-runtime",
-  "version": "2026.4.5-beta.1",
+  "version": "2026.4.5-beta.2",
   "description": "Multi-tenant AI agent runtime with OS-level isolation. Sandboxed execution, encrypted credentials, private memory per tenant — one server, no Docker.",
   "license": "MIT",
   "repository": {
