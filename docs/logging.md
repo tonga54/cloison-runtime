@@ -47,15 +47,17 @@ BULKHEAD_LOG_FILE=/var/log/bulkhead-runtime.log
 
 ## Log Levels
 
-| Level | Priority | Use |
-|-------|----------|-----|
-| `fatal` | 0 | Unrecoverable errors |
-| `error` | 1 | Operation failures |
-| `warn` | 2 | Degraded behavior |
-| `info` | 3 | Normal operations |
-| `debug` | 4 | Development detail |
-| `trace` | 5 | Fine-grained tracing |
-| `silent` | Infinity | Suppress all output |
+
+| Level    | Priority | Use                  |
+| -------- | -------- | -------------------- |
+| `fatal`  | 0        | Unrecoverable errors |
+| `error`  | 1        | Operation failures   |
+| `warn`   | 2        | Degraded behavior    |
+| `info`   | 3        | Normal operations    |
+| `debug`  | 4        | Development detail   |
+| `trace`  | 5        | Fine-grained tracing |
+| `silent` | Infinity | Suppress all output  |
+
 
 ## Child Loggers
 
@@ -78,3 +80,4 @@ configureLogger({
 ## Source Files
 
 - `src/logging/subsystem.ts` — Logger implementation, file output, rotation
+

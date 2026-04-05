@@ -25,6 +25,8 @@ Raw values are never written to disk.
 
 ## Credential Proxy
 
+![Credential Flow](assets/credential-flow.png)
+
 When a skill executes, credentials are decrypted **server-side** and injected into the skill process environment. The agent itself never has access to the decryption key or raw credential values.
 
 ```

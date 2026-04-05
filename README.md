@@ -49,6 +49,8 @@ const result = await workspace.run({
 
 ## Use Cases
 
+![Use Cases](docs/assets/use-cases.png)
+
 ### SaaS -- one agent per customer
 
 Customer A's agent can never see Customer B's tokens, data, or conversation history.
@@ -94,6 +96,8 @@ await platform.deleteWorkspace(ws.userId);
 ---
 
 ## How It Works
+
+![Architecture](docs/assets/architecture.png)
 
 When `workspace.run()` executes, Bulkhead spawns a **child process** with 5 layers of kernel isolation: user namespace, PID namespace, mount namespace (pivot_root), optional network namespace, and cgroups v2 resource limits. The agent **never runs in your application's process** and **cannot see anything outside its sandbox**.
 
