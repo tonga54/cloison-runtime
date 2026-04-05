@@ -1,4 +1,4 @@
-const warningFilterKey = Symbol.for("bulkhead-runtime.warning-filter");
+const warningFilterKey = Symbol.for("cloison-runtime.warning-filter");
 
 export type ProcessWarning = {
   code?: string;

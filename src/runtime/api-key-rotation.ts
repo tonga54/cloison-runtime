@@ -19,25 +19,25 @@ type ProviderApiKeyConfig = {
 
 const PROVIDER_API_KEY_CONFIG: Record<string, Omit<ProviderApiKeyConfig, "fallbackVars">> = {
   anthropic: {
-    liveSingle: "BULKHEAD_LIVE_ANTHROPIC_KEY",
-    listVar: "BULKHEAD_LIVE_ANTHROPIC_KEYS",
+    liveSingle: "CLOISON_LIVE_ANTHROPIC_KEY",
+    listVar: "CLOISON_LIVE_ANTHROPIC_KEYS",
     primaryVar: "ANTHROPIC_API_KEY",
     prefixedVar: "ANTHROPIC_API_KEY_",
   },
   google: {
-    liveSingle: "BULKHEAD_LIVE_GEMINI_KEY",
+    liveSingle: "CLOISON_LIVE_GEMINI_KEY",
     listVar: "GEMINI_API_KEYS",
     primaryVar: "GEMINI_API_KEY",
     prefixedVar: "GEMINI_API_KEY_",
   },
   "google-vertex": {
-    liveSingle: "BULKHEAD_LIVE_GEMINI_KEY",
+    liveSingle: "CLOISON_LIVE_GEMINI_KEY",
     listVar: "GEMINI_API_KEYS",
     primaryVar: "GEMINI_API_KEY",
     prefixedVar: "GEMINI_API_KEY_",
   },
   openai: {
-    liveSingle: "BULKHEAD_LIVE_OPENAI_KEY",
+    liveSingle: "CLOISON_LIVE_OPENAI_KEY",
     listVar: "OPENAI_API_KEYS",
     primaryVar: "OPENAI_API_KEY",
     prefixedVar: "OPENAI_API_KEY_",
@@ -69,7 +69,7 @@ function resolveProviderApiKeyConfig(provider: string): ProviderApiKeyConfig {
   const custom = PROVIDER_API_KEY_CONFIG[normalized];
   const base = PROVIDER_PREFIX_OVERRIDES[normalized] ?? normalized.toUpperCase().replace(/-/g, "_");
 
-  const liveSingle = custom?.liveSingle ?? `BULKHEAD_LIVE_${base}_KEY`;
+  const liveSingle = custom?.liveSingle ?? `CLOISON_LIVE_${base}_KEY`;
   const listVar = custom?.listVar ?? `${base}_API_KEYS`;
   const primaryVar = custom?.primaryVar ?? `${base}_API_KEY`;
   const prefixedVar = custom?.prefixedVar ?? `${base}_API_KEY_`;

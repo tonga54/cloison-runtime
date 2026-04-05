@@ -4,7 +4,7 @@ import type { SkillRegistry } from "../skills/registry.js";
 export interface PlatformConfig {
   stateDir: string;
   skillsDir?: string;
-  /** Default passphrase for credential encryption. Falls back to BULKHEAD_CREDENTIAL_KEY env var. */
+  /** Default passphrase for credential encryption. Falls back to CLOISON_CREDENTIAL_KEY env var. */
   credentialPassphrase?: string;
 }
 

@@ -79,11 +79,11 @@ export function createCredentialStore(
   const filePath = path.join(options.workspaceDir, "credentials.enc.json");
   const passphrase =
     options.passphrase ??
-    process.env["BULKHEAD_CREDENTIAL_KEY"];
+    process.env["CLOISON_CREDENTIAL_KEY"];
 
   if (!passphrase) {
     throw new Error(
-      "Credential store requires a passphrase: pass it explicitly or set BULKHEAD_CREDENTIAL_KEY",
+      "Credential store requires a passphrase: pass it explicitly or set CLOISON_CREDENTIAL_KEY",
     );
   }
 

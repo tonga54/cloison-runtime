@@ -32,7 +32,7 @@ describe("detectCapabilities", () => {
     });
   } else {
     it("throws on non-Linux platforms", async () => {
-      await expect(detectCapabilities()).rejects.toThrow("Bulkhead Runtime requires Linux");
+      await expect(detectCapabilities()).rejects.toThrow("Cloison Runtime requires Linux");
     });
   }
 });
@@ -110,7 +110,7 @@ describe("environment sanitization", () => {
       /^ANTHROPIC_/,
       /^GEMINI_/,
       /^GOOGLE_/,
-      /^BULKHEAD_CREDENTIAL/,
+      /^CLOISON_CREDENTIAL/,
     ];
 
     const dangerousVars = [
@@ -123,7 +123,7 @@ describe("environment sanitization", () => {
       "DATABASE_PASSWORD",
       "MY_SECRET",
       "AUTH_TOKEN",
-      "BULKHEAD_CREDENTIAL_KEY",
+      "CLOISON_CREDENTIAL_KEY",
     ];
 
     for (const envVar of dangerousVars) {

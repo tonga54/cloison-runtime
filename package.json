@@ -1,17 +1,17 @@
 {
-  "name": "bulkhead-runtime",
-  "version": "2026.4.5-beta.8",
+  "name": "cloison-runtime",
+  "version": "0.1.0",
   "description": "Multi-tenant AI agent runtime with OS-level isolation. Sandboxed execution, encrypted credentials, private memory per tenant — one server, no Docker.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tonga54/bulkhead-runtime.git"
+    "url": "git+https://github.com/tonga54/cloison-runtime.git"
   },
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "bulkhead-runtime": "dist/cli.js"
+    "cloison-runtime": "dist/cli.js"
   },
   "exports": {
     ".": {

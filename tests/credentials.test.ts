@@ -113,14 +113,14 @@ describe("CredentialStore", () => {
   });
 
   it("throws when no passphrase is available", () => {
-    delete process.env["BULKHEAD_CREDENTIAL_KEY"];
+    delete process.env["CLOISON_CREDENTIAL_KEY"];
     expect(() => createCredentialStore({ workspaceDir: tmpDir })).toThrow(
       "Credential store requires a passphrase",
     );
   });
 
   it("uses env var passphrase when none provided", async () => {
-    process.env["BULKHEAD_CREDENTIAL_KEY"] = "env-passphrase";
+    process.env["CLOISON_CREDENTIAL_KEY"] = "env-passphrase";
     try {
       const store = createCredentialStore({ workspaceDir: tmpDir });
       await store.store("test", { key: "value" });
@@ -129,7 +129,7 @@ describe("CredentialStore", () => {
       const result = await store2.resolve("test");
       expect(result).toEqual({ key: "value" });
     } finally {
-      delete process.env["BULKHEAD_CREDENTIAL_KEY"];
+      delete process.env["CLOISON_CREDENTIAL_KEY"];
     }
   });
 });

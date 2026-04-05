@@ -58,13 +58,13 @@ export type SubsystemLogger = {
 
 // --- Rolling log files (from logger.ts) ---
 
-const LOG_PREFIX = "bulkhead-runtime";
+const LOG_PREFIX = "cloison-runtime";
 const LOG_SUFFIX = ".log";
 const MAX_LOG_AGE_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_MAX_LOG_FILE_BYTES = 500 * 1024 * 1024;
 
 function resolveDefaultLogDir(): string {
-  return path.join(os.tmpdir(), "bulkhead-runtime-logs");
+  return path.join(os.tmpdir(), "cloison-runtime-logs");
 }
 
 function formatLocalDate(date: Date): string {
@@ -124,13 +124,13 @@ export function configureLogger(config: LoggerConfig): void {
 
 function getFileLevel(): LogLevel {
   if (globalConfig.level) return globalConfig.level;
-  const env = process.env["BULKHEAD_LOG_LEVEL"] ?? process.env["LOG_LEVEL"] ?? "";
+  const env = process.env["CLOISON_LOG_LEVEL"] ?? process.env["LOG_LEVEL"] ?? "";
   return tryParseLogLevel(env) ?? "info";
 }
 
 function getConsoleLevel(): LogLevel {
   if (globalConfig.consoleLevel) return globalConfig.consoleLevel;
-  const env = process.env["BULKHEAD_CONSOLE_LOG_LEVEL"] ?? "";
+  const env = process.env["CLOISON_CONSOLE_LOG_LEVEL"] ?? "";
   return tryParseLogLevel(env) ?? "warn";
 }
 
@@ -139,7 +139,7 @@ function getConsoleStyle(): "pretty" | "compact" | "json" {
 }
 
 function resolveLogFile(): string {
-  return globalConfig.file ?? process.env["BULKHEAD_LOG_FILE"] ?? defaultRollingPathForToday();
+  return globalConfig.file ?? process.env["CLOISON_LOG_FILE"] ?? defaultRollingPathForToday();
 }
 
 function getMaxFileBytes(): number {

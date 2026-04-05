@@ -15,7 +15,7 @@ import { loadSessionStore } from "../src/sessions/index.js";
 async function main() {
   cleanState();
 
-  const runtime = await initRuntime({ stateDir: ".bulkhead-runtime-demo" });
+  const runtime = await initRuntime({ stateDir: ".cloison-runtime-demo" });
 
   const subagentLog: { role: string; question: string; answer: string }[] = [];
 
@@ -85,7 +85,7 @@ async function main() {
   }
 
   console.log("=== All sessions ===\n");
-  const store = loadSessionStore(".bulkhead-runtime-demo");
+  const store = loadSessionStore(".cloison-runtime-demo");
   const sessions = Object.values(store.entries)
     .filter((e) => e.id.startsWith("orchestrator") || e.id.startsWith("specialist"))
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());

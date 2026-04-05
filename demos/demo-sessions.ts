@@ -17,7 +17,7 @@ async function main() {
   cleanState();
 
   const runtime = await initRuntime({
-    stateDir: ".bulkhead-runtime-demo",
+    stateDir: ".cloison-runtime-demo",
     systemPrompt: "You are a concise assistant. Reply in 1-2 sentences.",
   });
 
@@ -65,7 +65,7 @@ async function main() {
   // --- Inspect session store ---
   console.log("\n=== Session store ===\n");
 
-  const store = loadSessionStore(".bulkhead-runtime-demo");
+  const store = loadSessionStore(".cloison-runtime-demo");
   const entries = Object.values(store.entries).sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   );

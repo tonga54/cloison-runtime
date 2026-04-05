@@ -1,15 +1,15 @@
 # Structured Logging
 
-Bulkhead Runtime includes a structured logging system with subsystem tagging, multiple output styles, and file rotation.
+Cloison Runtime includes a structured logging system with subsystem tagging, multiple output styles, and file rotation.
 
 ## Configuration
 
 ```typescript
-import { configureLogger, createSubsystemLogger } from "bulkhead-runtime";
+import { configureLogger, createSubsystemLogger } from "cloison-runtime";
 
 configureLogger({
   level: "debug",
-  file: "/var/log/bulkhead-runtime.log",
+  file: "/var/log/cloison-runtime.log",
   maxFileBytes: 10 * 1024 * 1024,
   json: true,
 });
@@ -21,8 +21,8 @@ log.info("agent started", { userId: "alice", model: "claude-sonnet-4-20250514" }
 Or via environment:
 
 ```bash
-BULKHEAD_LOG_LEVEL=debug
-BULKHEAD_LOG_FILE=/var/log/bulkhead-runtime.log
+CLOISON_LOG_LEVEL=debug
+CLOISON_LOG_FILE=/var/log/cloison-runtime.log
 ```
 
 ## Output Styles

@@ -1,5 +1,5 @@
 {
-  "name": "bulkhead-runtime",
+  "name": "cloison-runtime",
   "dockerComposeFile": "../docker-compose.yml",
   "service": "dev",
   "workspaceFolder": "/app",

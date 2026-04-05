@@ -41,7 +41,7 @@ const result = await runtime.run({ message: "..." });
 For long conversations, older tool results can be pruned to stay within context limits:
 
 ```typescript
-import { pruneContextMessages } from "bulkhead-runtime";
+import { pruneContextMessages } from "cloison-runtime";
 
 const pruned = pruneContextMessages(messages, {
   maxTokens: 100_000,

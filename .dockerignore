@@ -3,5 +3,5 @@ dist/
 .git/
 *.db
 .demo-memory-db/
-.bulkhead-runtime-demo/
+.cloison-runtime-demo/
 .platform-demo/

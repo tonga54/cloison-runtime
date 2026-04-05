@@ -250,7 +250,7 @@ function writeWrapperScript(
   seccompCmd?: string,
   seccompArgs?: string[],
 ): string {
-  const tmpDir = path.join(os.tmpdir(), "bulkhead-runtime-sandbox");
+  const tmpDir = path.join(os.tmpdir(), "cloison-runtime-sandbox");
   fs.mkdirSync(tmpDir, { recursive: true, mode: 0o700 });
   const scriptPath = path.join(tmpDir, `${sandboxId}-init.sh`);
 

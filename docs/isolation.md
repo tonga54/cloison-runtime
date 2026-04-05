@@ -1,6 +1,6 @@
 # Sandbox & Isolation
 
-Bulkhead Runtime enforces tenant isolation at the **kernel level** using Linux namespaces. When `workspace.run()` executes, the agent runs in a child process with 5 layers of OS isolation. It never runs in your application's process.
+Cloison Runtime enforces tenant isolation at the **kernel level** using Linux namespaces. When `workspace.run()` executes, the agent runs in a child process with 5 layers of OS isolation. It never runs in your application's process.
 
 ## 5 Layers of Sandbox Isolation
 
@@ -40,7 +40,7 @@ All layers are **fail-closed** — if any layer can't be applied, the sandbox re
 ![Execution Flow](assets/execution-flow.png)
 
 ```
-Your App                          Bulkhead Runtime
+Your App                          Cloison Runtime
    │                                    │
    ├─ workspace.run(message) ──────────►│
    │                                    ├─ Resolve model + API key

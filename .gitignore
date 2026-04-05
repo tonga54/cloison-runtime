@@ -1,7 +1,7 @@
 node_modules/
 dist/
 .demo-memory-db/
-.bulkhead-runtime-demo/
+.cloison-runtime-demo/
 .platform-demo/
 *.db
 .context/

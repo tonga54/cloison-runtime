@@ -1,7 +1,7 @@
 import { isTruthyEnvValue } from "../infra/env.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 
-const debugEmbeddings = isTruthyEnvValue(process.env.BULKHEAD_DEBUG_MEMORY_EMBEDDINGS);
+const debugEmbeddings = isTruthyEnvValue(process.env.CLOISON_DEBUG_MEMORY_EMBEDDINGS);
 const log = createSubsystemLogger("memory/embeddings");
 
 export function debugEmbeddingsLog(message: string, meta?: Record<string, unknown>): void {

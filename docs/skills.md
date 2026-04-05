@@ -60,7 +60,7 @@ Skills run with a minimal environment:
 ## Registering Skills
 
 ```typescript
-const platform = createPlatform({ stateDir: "/var/bulkhead-runtime" });
+const platform = createPlatform({ stateDir: "/var/cloison-runtime" });
 
 // Register from a directory
 platform.skills.register("/path/to/github-issues");

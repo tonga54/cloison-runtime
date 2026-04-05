@@ -19,7 +19,7 @@ export interface CgroupController {
 const CGROUP_BASE = "/sys/fs/cgroup";
 
 function findAvailableCgroupPath(name: string): string {
-  const base = path.join(CGROUP_BASE, "bulkhead-runtime");
+  const base = path.join(CGROUP_BASE, "cloison-runtime");
   return path.join(base, name);
 }
 

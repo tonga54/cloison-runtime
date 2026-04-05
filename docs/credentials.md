@@ -53,8 +53,8 @@ The encryption passphrase is set once per platform:
 
 ```typescript
 const platform = createPlatform({
-  stateDir: "/var/bulkhead-runtime",
-  credentialPassphrase: process.env.BULKHEAD_CREDENTIAL_KEY,
+  stateDir: "/var/cloison-runtime",
+  credentialPassphrase: process.env.CLOISON_CREDENTIAL_KEY,
 });
 ```
 

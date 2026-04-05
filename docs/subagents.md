@@ -18,7 +18,7 @@ The agent decides when to delegate work to specialists.
 ## Programmatic Subagents
 
 ```typescript
-import { spawnSubagentsParallel } from "bulkhead-runtime";
+import { spawnSubagentsParallel } from "cloison-runtime";
 
 const results = await spawnSubagentsParallel({
   tasks: [
@@ -46,7 +46,7 @@ Subagents can spawn their own subagents, up to a configurable depth limit (defau
 The subagent registry tracks all active and completed sub-agent runs:
 
 ```typescript
-import { createSubagentRegistry } from "bulkhead-runtime";
+import { createSubagentRegistry } from "cloison-runtime";
 
 const registry = createSubagentRegistry();
 registry.listActive();   // Currently running

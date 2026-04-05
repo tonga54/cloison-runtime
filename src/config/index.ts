@@ -52,12 +52,12 @@ export interface AgentRuntimeConfig {
 }
 
 export function getDefaultStateDir(): string {
-  return path.join(os.homedir(), ".bulkhead-runtime");
+  return path.join(os.homedir(), ".cloison-runtime");
 }
 
 export function loadConfig(configPath?: string): AgentRuntimeConfig {
-  const explicit = configPath ?? process.env["BULKHEAD_CONFIG_PATH"];
-  const resolved = explicit ?? path.join(getDefaultStateDir(), "bulkhead-runtime.json");
+  const explicit = configPath ?? process.env["CLOISON_CONFIG_PATH"];
+  const resolved = explicit ?? path.join(getDefaultStateDir(), "cloison-runtime.json");
 
   try {
     const raw = fs.readFileSync(resolved, "utf-8");
@@ -74,7 +74,7 @@ export function loadConfig(configPath?: string): AgentRuntimeConfig {
 export function resolveStateDir(config: AgentRuntimeConfig): string {
   return (
     config.stateDir ??
-    process.env["BULKHEAD_STATE_DIR"] ??
+    process.env["CLOISON_STATE_DIR"] ??
     getDefaultStateDir()
   );
 }

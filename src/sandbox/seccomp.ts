@@ -123,7 +123,7 @@ export function writeSeccompProfile(
   profile: SeccompProfile,
   sandboxId: string,
 ): string {
-  const tmpDir = path.join(os.tmpdir(), "bulkhead-runtime-seccomp");
+  const tmpDir = path.join(os.tmpdir(), "cloison-runtime-seccomp");
   fs.mkdirSync(tmpDir, { recursive: true, mode: 0o700 });
   const profilePath = path.join(tmpDir, `${sandboxId}.json`);
   fs.writeFileSync(profilePath, JSON.stringify(profile, null, 2), { mode: 0o600 });

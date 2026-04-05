@@ -164,7 +164,7 @@ int main(int argc, char *argv[]) {
 let loaderBinaryPath: string | null = null;
 
 function getLoaderDir(): string {
-  return path.join(os.tmpdir(), "bulkhead-runtime-seccomp");
+  return path.join(os.tmpdir(), "cloison-runtime-seccomp");
 }
 
 function compileLoader(): string | null {

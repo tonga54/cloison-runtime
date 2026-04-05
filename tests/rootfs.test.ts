@@ -195,7 +195,7 @@ describe("buildMountScript", () => {
       ).toThrow("resolves outside rootDir");
     } finally {
       fs.rmSync(wsDir, { recursive: true, force: true });
-      const rootDir = path.join(os.tmpdir(), "bulkhead-runtime-rootfs", "test-traversal");
+      const rootDir = path.join(os.tmpdir(), "cloison-runtime-rootfs", "test-traversal");
       fs.rmSync(rootDir, { recursive: true, force: true });
     }
   });
@@ -214,7 +214,7 @@ describe("buildMountScript", () => {
       ).toThrow("sensitive host path");
     } finally {
       fs.rmSync(wsDir, { recursive: true, force: true });
-      const rootDir = path.join(os.tmpdir(), "bulkhead-runtime-rootfs", "test-sensitive");
+      const rootDir = path.join(os.tmpdir(), "cloison-runtime-rootfs", "test-sensitive");
       fs.rmSync(rootDir, { recursive: true, force: true });
     }
   });
@@ -233,7 +233,7 @@ describe("buildMountScript", () => {
       ).toThrow("does not exist");
     } finally {
       fs.rmSync(wsDir, { recursive: true, force: true });
-      const rootDir = path.join(os.tmpdir(), "bulkhead-runtime-rootfs", "test-noexist");
+      const rootDir = path.join(os.tmpdir(), "cloison-runtime-rootfs", "test-noexist");
       fs.rmSync(rootDir, { recursive: true, force: true });
     }
   });

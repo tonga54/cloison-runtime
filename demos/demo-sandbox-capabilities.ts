@@ -39,13 +39,13 @@ async function main() {
     console.log("  → Agents run inside isolated rootfs with coding tools (read/write/edit/bash)");
     console.log("  → Each agent gets: user ns + mount ns + PID ns + cgroups v2");
   } else {
-    console.log("  → ERROR: Bulkhead Runtime requires Linux with namespace support.");
+    console.log("  → ERROR: Cloison Runtime requires Linux with namespace support.");
     console.log("  → Run inside Docker: docker compose run dev");
   }
 
   // --- Credential encryption ---
   console.log("\n--- Credential Encryption (AES-256-GCM + PBKDF2) ---");
-  const tmpDir = path.join(os.tmpdir(), `bulkhead-runtime-cred-demo-${Date.now()}`);
+  const tmpDir = path.join(os.tmpdir(), `cloison-runtime-cred-demo-${Date.now()}`);
   fs.mkdirSync(tmpDir, { recursive: true });
 
   const store = createCredentialStore({

@@ -1,6 +1,6 @@
 # Model Fallback & API Key Rotation
 
-When a model fails, Bulkhead automatically falls back to the next candidate. The error classification engine — ported from [OpenClaw](https://github.com/nicepkg/openclaw) — covers rate limits, billing, auth, overload, timeout, model not found, context overflow, and provider-specific patterns.
+When a model fails, Cloison automatically falls back to the next candidate. The error classification engine — ported from [OpenClaw](https://github.com/nicepkg/openclaw) — covers rate limits, billing, auth, overload, timeout, model not found, context overflow, and provider-specific patterns.
 
 ## Model Fallback
 
@@ -57,7 +57,7 @@ ANTHROPIC_API_KEY_2=sk-ant-...
 Prevents silent failures from models with insufficient context windows:
 
 ```typescript
-import { resolveContextWindowInfo, evaluateContextWindowGuard } from "bulkhead-runtime";
+import { resolveContextWindowInfo, evaluateContextWindowGuard } from "cloison-runtime";
 
 const info = resolveContextWindowInfo({
   modelContextWindow: model.contextWindow,

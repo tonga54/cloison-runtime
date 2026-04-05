@@ -46,7 +46,7 @@ export function prepareRootfs(options: RootfsOptions): PreparedRootfs {
 
   const rootDir = path.join(
     os.tmpdir(),
-    "bulkhead-runtime-rootfs",
+    "cloison-runtime-rootfs",
     options.sandboxId,
   );
 

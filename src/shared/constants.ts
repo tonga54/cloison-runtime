@@ -2,7 +2,7 @@ export const DEFAULT_MODEL = "claude-sonnet-4-20250514";
 export const DEFAULT_PROVIDER = "anthropic";
 
 export const LINUX_REQUIRED_MESSAGE =
-  "Bulkhead Runtime requires Linux. " +
+  "Cloison Runtime requires Linux. " +
   "For local development on macOS/Windows, use the provided Dockerfile: docker compose run dev";
 
 const PROVIDER_ENV_KEY_OVERRIDES: Record<string, string> = {

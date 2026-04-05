@@ -72,7 +72,7 @@ const memory = createSimpleMemoryManager({
 ## Batch Embedding with Retry
 
 ```typescript
-import { embedBatchWithRetry } from "bulkhead-runtime";
+import { embedBatchWithRetry } from "cloison-runtime";
 
 const result = await embedBatchWithRetry(
   ["text 1", "text 2", "text 3"],
@@ -92,7 +92,7 @@ const result = await embedBatchWithRetry(
 Automatically watches `MEMORY.md` and `memory/` directory for changes and re-indexes them.
 
 ```typescript
-import { createFileIndexer } from "bulkhead-runtime";
+import { createFileIndexer } from "cloison-runtime";
 
 const indexer = createFileIndexer({
   workspaceDir: "/path/to/workspace",
@@ -110,7 +110,7 @@ indexer.stop();
 Indexes session transcripts into memory for cross-session search. Supports post-compaction re-indexing.
 
 ```typescript
-import { createSessionIndexer } from "bulkhead-runtime";
+import { createSessionIndexer } from "cloison-runtime";
 
 const indexer = createSessionIndexer({
   sessionsDir: path.join(stateDir, "sessions"),
@@ -128,7 +128,7 @@ indexer.onTranscriptUpdate(sessionFile);
 All embedding provider HTTP calls are protected against Server-Side Request Forgery. The SSRF engine resolves DNS and pins IPs before connecting, blocks private/link-local ranges, and enforces a hostname allowlist. Fail-closed by default.
 
 ```typescript
-import { validateUrl } from "bulkhead-runtime";
+import { validateUrl } from "cloison-runtime";
 
 await validateUrl("https://api.openai.com/v1/embeddings"); // OK
 await validateUrl("http://169.254.1.1/steal");              // throws SSRF error

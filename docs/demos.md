@@ -3,7 +3,7 @@
 All demos run inside the Docker development container:
 
 ```bash
-git clone https://github.com/tonga54/bulkhead-runtime.git && cd bulkhead-runtime
+git clone https://github.com/tonga54/cloison-runtime.git && cd cloison-runtime
 docker compose run dev bash
 ```
 
@@ -13,7 +13,7 @@ Set `GEMINI_API_KEY` (or your provider's key) before running.
 
 | Demo | Command | Description |
 |------|---------|-------------|
-| **Workspace Real** | `npx tsx demos/demo-workspace-real.ts` | Full multi-tenant scenario: 2 teams with skills, memory, credentials, agent execution, and isolation verification. Also requires `BULKHEAD_CREDENTIAL_KEY`. |
+| **Workspace Real** | `npx tsx demos/demo-workspace-real.ts` | Full multi-tenant scenario: 2 teams with skills, memory, credentials, agent execution, and isolation verification. Also requires `CLOISON_CREDENTIAL_KEY`. |
 | **Subagents** | `npx tsx demos/demo-subagents.ts` | Orchestrator delegates to specialist sub-agents (historian, chemist, biologist, mathematician). |
 | **Sessions** | `npx tsx demos/demo-sessions.ts` | Named sessions, auto-generated IDs, specialized agents, lifecycle hooks. |
 | **Memory** | `npx tsx demos/demo-memory.ts` | Gemini embeddings, semantic search, FTS5 keyword search, hybrid ranking. |
@@ -28,7 +28,7 @@ Set `GEMINI_API_KEY` (or your provider's key) before running.
 | **SSRF** | `npx tsx demos/demo-ssrf.ts` | Private IP detection, hostname blocking, URL validation, allowlists. |
 | **Logging** | `npx tsx demos/demo-logging.ts` | Compact, pretty, and JSON styles. File output, child loggers, level filtering. |
 | **File Indexer** | `npx tsx demos/demo-file-indexer.ts` | Indexes MEMORY.md + memory/ files into FTS5. Re-sync, modify, delete. |
-| **Platform** | `npx tsx demos/demo-platform.ts` | Multi-tenant CRUD, memory isolation, credential encryption, path traversal protection. Requires `BULKHEAD_CREDENTIAL_KEY`. |
+| **Platform** | `npx tsx demos/demo-platform.ts` | Multi-tenant CRUD, memory isolation, credential encryption, path traversal protection. Requires `CLOISON_CREDENTIAL_KEY`. |
 | **Sandbox Capabilities** | `npx tsx demos/demo-sandbox-capabilities.ts` | Credential encryption, proxy injection, sandbox readiness check. |
 
 ## Example Skills

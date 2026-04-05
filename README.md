@@ -1,6 +1,6 @@
-![Bulkhead Runtime](docs/assets/hero-banner.png)
+![Cloison Runtime](docs/assets/hero-banner.png)
 
-[![npm](https://img.shields.io/npm/v/bulkhead-runtime?style=flat-square&color=00ff41&labelColor=0d1117)](https://www.npmjs.com/package/bulkhead-runtime) ![MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square&labelColor=0d1117) ![node](https://img.shields.io/badge/node-%3E%3D22.12-brightgreen?style=flat-square&labelColor=0d1117&logo=node.js&logoColor=white) ![deps](https://img.shields.io/badge/runtime_deps-3-00ff41?style=flat-square&labelColor=0d1117) ![tests](https://img.shields.io/badge/tests-279_passing-00ff41?style=flat-square&labelColor=0d1117) ![isolation](https://img.shields.io/badge/sandbox-5_isolation_layers-ff6b6b?style=flat-square&labelColor=0d1117) ![crypto](https://img.shields.io/badge/crypto-AES--256--GCM-blueviolet?style=flat-square&labelColor=0d1117)
+[![npm](https://img.shields.io/npm/v/cloison-runtime?style=flat-square&color=4F8CFF&labelColor=0A0F1C)](https://www.npmjs.com/package/cloison-runtime) ![MIT](https://img.shields.io/badge/license-MIT-4F8CFF?style=flat-square&labelColor=0A0F1C) ![node](https://img.shields.io/badge/node-%3E%3D22.12-18C6B3?style=flat-square&labelColor=0A0F1C&logo=node.js&logoColor=white) ![deps](https://img.shields.io/badge/runtime_deps-3-18C6B3?style=flat-square&labelColor=0A0F1C) ![tests](https://img.shields.io/badge/tests-279_passing-18C6B3?style=flat-square&labelColor=0A0F1C) ![isolation](https://img.shields.io/badge/sandbox-5_isolation_layers-7A5CFF?style=flat-square&labelColor=0A0F1C) ![crypto](https://img.shields.io/badge/crypto-AES--256--GCM-7A5CFF?style=flat-square&labelColor=0A0F1C)
 
 **Run 1,000 AI agents on a single Linux box.**
 Each in its own OS namespace. Each with private memory, encrypted credentials, and an isolated filesystem.
@@ -13,15 +13,15 @@ Built on battle-tested subsystems extracted from [OpenClaw](https://github.com/n
 ## Quick Start
 
 ```bash
-npm install bulkhead-runtime
+npm install cloison-runtime
 ```
 
 ```typescript
-import { createPlatform } from "bulkhead-runtime";
+import { createPlatform } from "cloison-runtime";
 
 const platform = createPlatform({
-  stateDir: "/var/bulkhead-runtime",
-  credentialPassphrase: process.env.BULKHEAD_CREDENTIAL_KEY,
+  stateDir: "/var/cloison-runtime",
+  credentialPassphrase: process.env.CLOISON_CREDENTIAL_KEY,
 });
 
 const workspace = await platform.createWorkspace("user-42", {
@@ -40,7 +40,7 @@ const result = await workspace.run({
 > **macOS / Windows dev:**
 >
 > ```bash
-> git clone https://github.com/tonga54/bulkhead-runtime.git && cd bulkhead-runtime
+> git clone https://github.com/tonga54/cloison-runtime.git && cd cloison-runtime
 > docker compose run dev bash
 > pnpm test  # 279 tests, all green
 > ```
@@ -99,7 +99,7 @@ await platform.deleteWorkspace(ws.userId);
 
 ![Architecture](docs/assets/architecture.png)
 
-When `workspace.run()` executes, Bulkhead spawns a **child process** with 5 layers of kernel isolation: user namespace, PID namespace, mount namespace (pivot_root), optional network namespace, and cgroups v2 resource limits. The agent **never runs in your application's process** and **cannot see anything outside its sandbox**.
+When `workspace.run()` executes, Cloison spawns a **child process** with 5 layers of kernel isolation: user namespace, PID namespace, mount namespace (pivot_root), optional network namespace, and cgroups v2 resource limits. The agent **never runs in your application's process** and **cannot see anything outside its sandbox**.
 
 > **[Read the full isolation architecture &rarr;](docs/isolation.md)**
 
@@ -110,7 +110,7 @@ When `workspace.run()` executes, Bulkhead spawns a **child process** with 5 laye
 For prototyping or single-agent use. No platform needed.
 
 ```typescript
-import { createRuntime } from "bulkhead-runtime";
+import { createRuntime } from "cloison-runtime";
 
 const runtime = await createRuntime({
   provider: "anthropic",
@@ -142,9 +142,9 @@ const result = await runtime.run({
 
 ---
 
-## Why Bulkhead Over Alternatives
+## Why Cloison Over Alternatives
 
-|                                  | Docker per user    | E2B / Cloud          | **Bulkhead Runtime**                         |
+|                                  | Docker per user    | E2B / Cloud          | **Cloison Runtime**                          |
 | -------------------------------- | ------------------ | -------------------- | -------------------------------------------- |
 | **Isolation mechanism**          | Container per user | Cloud VM per session | **Linux namespaces**                         |
 | **Credential security**          | DIY                | Not built-in         | **AES-256-GCM, never exposed to agent**      |
@@ -284,7 +284,7 @@ Every file is workspace-scoped. No shared state between tenants.
 
 ## Built on OpenClaw
 
-Bulkhead Runtime stands on the shoulders of [OpenClaw](https://github.com/nicepkg/openclaw). Several production-critical subsystems were ported directly:
+Cloison Runtime stands on the shoulders of [OpenClaw](https://github.com/nicepkg/openclaw). Several production-critical subsystems were ported directly:
 
 | Subsystem | Origin |
 |-----------|--------|
@@ -298,7 +298,7 @@ Bulkhead Runtime stands on the shoulders of [OpenClaw](https://github.com/nicepk
 | **Subagent orchestration** | `src/agents/subagent-*.ts` |
 | **Structured logging** | `src/logging/logger.ts`, `subsystem.ts` |
 
-OpenClaw solved these problems in production. We extracted, adapted, and integrated them into Bulkhead's multi-tenant architecture.
+OpenClaw solved these problems in production. We extracted, adapted, and integrated them into Cloison's multi-tenant architecture.
 
 ---
 

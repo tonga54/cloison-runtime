@@ -21,15 +21,15 @@
  *   - Credential isolation
  *   - Full tenant isolation (Alpha can't see Beta's data)
  *
- * Run: GEMINI_API_KEY=... BULKHEAD_CREDENTIAL_KEY=demo npx tsx demos/demo-workspace-real.ts
+ * Run: GEMINI_API_KEY=... CLOISON_CREDENTIAL_KEY=demo npx tsx demos/demo-workspace-real.ts
  */
 import { createPlatform } from "../src/platform/index.js";
 import { createRuntime, type AgentRunResult } from "../src/runtime/index.js";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-const PROVIDER = process.env["BULKHEAD_PROVIDER"] ?? "google";
-const MODEL = process.env["BULKHEAD_MODEL"] ?? "gemini-2.5-flash";
+const PROVIDER = process.env["CLOISON_PROVIDER"] ?? "google";
+const MODEL = process.env["CLOISON_MODEL"] ?? "gemini-2.5-flash";
 const STATE_DIR = path.join(import.meta.dirname, "..", ".workspace-demo");
 
 fs.rmSync(STATE_DIR, { recursive: true, force: true });
@@ -41,7 +41,7 @@ async function main() {
 
   const platform = createPlatform({
     stateDir: STATE_DIR,
-    credentialPassphrase: process.env["BULKHEAD_CREDENTIAL_KEY"] ?? "demo-key",
+    credentialPassphrase: process.env["CLOISON_CREDENTIAL_KEY"] ?? "demo-key",
   });
 
   const skillsDir = path.join(import.meta.dirname, "skills");

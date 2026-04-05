@@ -26,7 +26,7 @@ async function main() {
 
   if (!message) {
     console.error(
-      "Usage: bulkhead-runtime --message <message> [--session <id>] [--model <model>] [--provider <provider>]",
+      "Usage: cloison-runtime --message <message> [--session <id>] [--model <model>] [--provider <provider>]",
     );
     process.exit(1);
   }
